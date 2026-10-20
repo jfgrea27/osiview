@@ -1,0 +1,6 @@
+[package]
+name = "rhino-sim"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

@@ -1,0 +1,6 @@
+[package]
+name = "rhino-client"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

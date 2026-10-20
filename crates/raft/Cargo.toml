@@ -1,0 +1,6 @@
+[package]
+name = "rhino-raft"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
