@@ -1,5 +1,5 @@
 {
-  description = "rhino — Rust dev shell";
+  description = "osiview — Rust dev shell";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

@@ -1,7 +1,19 @@
-[workspace]
-resolver = "3"
-members = ["crates/*"]
-
-[workspace.package]
+[package]
+name = "osiview"
 version = "0.1.0"
 edition = "2024"
+
+[dependencies]
+aes-gcm = "0.10"
+chacha20poly1305 = "0.10"
+clap = { version = "4.6.7", features = ["derive"] }
+flate2 = "1"
+hkdf = "0.12"
+hmac = "0.12"
+libc = "0.2"
+# HTTPS client for `osiview https://…` only: it makes the request and hands
+# over its TLS secrets. All parsing and decryption of the captured packets is
+# osiview's own (level5/level6). `ring` avoids aws-lc-rs's cmake build.
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "logging"] }
+sha2 = "0.10"
+webpki-roots = "1"
