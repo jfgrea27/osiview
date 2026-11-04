@@ -422,7 +422,10 @@ pub fn ladder(left: &str, right: &str, rungs: &[Rung]) -> String {
         } else {
             format!("◀{}{}{}", "─".repeat(l), paint(&label, "1"), "─".repeat(rt))
         };
-        out.push_str(&format!("{:>margin$}  │{line}│\n", paint(&r.time, "2")));
+        // Pad before painting: the colour codes are invisible but would count
+        // towards the width, and the rails wouldn't line up.
+        let time = format!("{:>margin$}", r.time);
+        out.push_str(&format!("{}  │{line}│\n", paint(&time, "2")));
     }
     out
 }

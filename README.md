@@ -5,43 +5,15 @@ decoded layer by layer from the Ethernet frame up to the HTTP response. For
 HTTPS it decrypts the TLS itself. The packet decoders are written by hand from
 the RFCs and use no packet libraries.
 
-```text
-$ osiview https://example.com
-osiview: example.com -> 172.66.147.243, 104.20.23.154 (own DNS query to 192.168.5.1:53)
-osiview: connected 172.17.0.5:59460 -> 172.66.147.243:443
-━━━ 27 packets caused by GET https://example.com/ ━━━
-...
-━━━ TCP connection (L4) carrying TLS 1.3 (L5/L6) and HTTP (L7) ━━━
-              172.17.0.5:59460                  172.66.147.243:443
- +117.679 ms  │────────────────────── SYN ──────────────────────▶│
- +136.750 ms  │◀──────────────────── SYN-ACK ────────────────────│
- +136.770 ms  │────────────────────── ACK ──────────────────────▶│
- +137.338 ms  │────────────── ClientHello (233 B) ──────────────▶│
- +294.756 ms  │◀───── ServerHello, CCS, encrypted… (1420 B) ─────│
- +294.782 ms  │◀────────────────── data 1436 B ──────────────────│
- +295.675 ms  │─────────────────── CCS (6 B) ───────────────────▶│
- +300.094 ms  │───────────── encrypted 69 B (74 B) ─────────────▶│
- +300.257 ms  │──────────── encrypted 136 B (141 B) ────────────▶│
- +318.705 ms  │◀─ encrypted 477 B, encrypted 765 B, encrypted… ──│
- +318.717 ms  │◀────────────────────── FIN ──────────────────────│
-...
-⏱  DNS 117.7 ms  ·  TCP handshake RTT 19.1 ms  ·  server response 157.4 ms  ·  total 319.2 ms
+![Recording of `just e2e`: osiview requests http://example.com and prints every packet, L2 to L7](docs/e2e.svg)
 
-━━━ TLS session, decrypted from the captured segments (L4 → L5/L6 → L7) ━━━
---- L5 tls: TLS 1.3, TLS_AES_256_GCM_SHA384, sni example.com, alpn http/1.1, full handshake
-...
-    {Certificate: 4 certificate(s)}
-    {CertificateVerify ecdsa_secp256r1_sha256, 70-byte signature}
-    {Finished (verify_data 48 bytes)} - verified
-...
---- L7 server application data (decrypted): 753 bytes
-HTTP/1.1 200 OK
-...
-[L6 Content-Encoding: gzip: 400 bytes -> 577 bytes inflated]
-<!doctype html><html lang=en><head>...
-
-✓ the 753 decrypted bytes match exactly what the TLS client received
-```
+A real run of `just e2e`, recorded in Docker on macOS. osiview requests
+`http://example.com` and resolves it with its own DNS query. It prints all 14
+packets layer by layer and draws the DNS exchange and the TCP connection as
+sequence diagrams. Then it rebuilds the HTTP response from the captured
+segments and checks it against what the socket received. osiview prints its
+output in a few large blocks once the capture stops, so the animation plays
+each block one line at a time to keep it readable.
 
 osiview is also a way to learn networking. Each module starts with an
 explanation of its protocol, with diagrams, and cites the RFC sections it
@@ -149,6 +121,46 @@ server's certificate against the Mozilla root store, as any real client would.
 rustls only makes the request. Through its `KeyLog` callback, it hands osiview
 each traffic secret as it derives it. osiview turns them into `SSLKEYLOGFILE`
 lines and decrypts the captured packets with its own layer 5 and 6 code.
+
+An HTTPS run, trimmed:
+
+```text
+$ osiview https://example.com
+osiview: example.com -> 172.66.147.243, 104.20.23.154 (own DNS query to 192.168.5.1:53)
+osiview: connected 172.17.0.5:59460 -> 172.66.147.243:443
+━━━ 27 packets caused by GET https://example.com/ ━━━
+...
+━━━ TCP connection (L4) carrying TLS 1.3 (L5/L6) and HTTP (L7) ━━━
+              172.17.0.5:59460                  172.66.147.243:443
+ +117.679 ms  │────────────────────── SYN ──────────────────────▶│
+ +136.750 ms  │◀──────────────────── SYN-ACK ────────────────────│
+ +136.770 ms  │────────────────────── ACK ──────────────────────▶│
+ +137.338 ms  │────────────── ClientHello (233 B) ──────────────▶│
+ +294.756 ms  │◀───── ServerHello, CCS, encrypted… (1420 B) ─────│
+ +294.782 ms  │◀────────────────── data 1436 B ──────────────────│
+ +295.675 ms  │─────────────────── CCS (6 B) ───────────────────▶│
+ +300.094 ms  │───────────── encrypted 69 B (74 B) ─────────────▶│
+ +300.257 ms  │──────────── encrypted 136 B (141 B) ────────────▶│
+ +318.705 ms  │◀─ encrypted 477 B, encrypted 765 B, encrypted… ──│
+ +318.717 ms  │◀────────────────────── FIN ──────────────────────│
+...
+⏱  DNS 117.7 ms  ·  TCP handshake RTT 19.1 ms  ·  server response 157.4 ms  ·  total 319.2 ms
+
+━━━ TLS session, decrypted from the captured segments (L4 → L5/L6 → L7) ━━━
+--- L5 tls: TLS 1.3, TLS_AES_256_GCM_SHA384, sni example.com, alpn http/1.1, full handshake
+...
+    {Certificate: 4 certificate(s)}
+    {CertificateVerify ecdsa_secp256r1_sha256, 70-byte signature}
+    {Finished (verify_data 48 bytes)} - verified
+...
+--- L7 server application data (decrypted): 753 bytes
+HTTP/1.1 200 OK
+...
+[L6 Content-Encoding: gzip: 400 bytes -> 577 bytes inflated]
+<!doctype html><html lang=en><head>...
+
+✓ the 753 decrypted bytes match exactly what the TLS client received
+```
 
 To save a run and decrypt it again later:
 
